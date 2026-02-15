@@ -1,0 +1,23 @@
+{
+  "name": "seo-chrome-extension",
+  "version": "0.1.0",
+  "description": "One-click SEO analysis Chrome extension by SEO Bandwagon",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step needed - load unpacked in Chrome'",
+    "zip": "zip -r seo-analyzer.zip manifest.json src/ README.md -x '*.DS_Store'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keepkalm/seo-chrome-extension.git"
+  },
+  "keywords": [
+    "seo",
+    "chrome-extension",
+    "meta-tags",
+    "schema-markup",
+    "accessibility"
+  ],
+  "author": "SEO Bandwagon <kyle@seobandwagon.com>",
+  "license": "MIT"
+}

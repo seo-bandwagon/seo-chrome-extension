@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Analyzer</title>
+  <link rel="stylesheet" href="../styles/popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>SEO Analyzer</span>
+      </div>
+      <div class="score-badge" id="overallScore">--</div>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Analyzing page...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="results hidden">
+      <!-- Meta Tags Section -->
+      <section class="section" data-section="meta">
+        <div class="section-header" onclick="toggleSection('meta')">
+          <h2>
+            <span class="icon">📝</span>
+            Meta Tags
+          </h2>
+          <div class="section-score" id="metaScore">--</div>
+        </div>
+        <div class="section-content" id="metaContent"></div>
+      </section>
+
+      <!-- Headings Section -->
+      <section class="section" data-section="headings">
+        <div class="section-header" onclick="toggleSection('headings')">
+          <h2>
+            <span class="icon">📑</span>
+            Headings
+          </h2>
+          <div class="section-score" id="headingsScore">--</div>
+        </div>
+        <div class="section-content" id="headingsContent"></div>
+      </section>
+
+      <!-- Images Section -->
+      <section class="section" data-section="images">
+        <div class="section-header" onclick="toggleSection('images')">
+          <h2>
+            <span class="icon">🖼️</span>
+            Images
+          </h2>
+          <div class="section-score" id="imagesScore">--</div>
+        </div>
+        <div class="section-content" id="imagesContent"></div>
+      </section>
+
+      <!-- Links Section -->
+      <section class="section" data-section="links">
+        <div class="section-header" onclick="toggleSection('links')">
+          <h2>
+            <span class="icon">🔗</span>
+            Links
+          </h2>
+          <div class="section-score" id="linksScore">--</div>
+        </div>
+        <div class="section-content" id="linksContent"></div>
+      </section>
+
+      <!-- Schema Section -->
+      <section class="section" data-section="schema">
+        <div class="section-header" onclick="toggleSection('schema')">
+          <h2>
+            <span class="icon">🏷️</span>
+            Schema Markup
+          </h2>
+          <div class="section-score" id="schemaScore">--</div>
+        </div>
+        <div class="section-content" id="schemaContent"></div>
+      </section>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="error hidden">
+      <p>⚠️ Unable to analyze this page.</p>
+      <p class="error-detail" id="errorDetail"></p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <a href="https://seobandwagon.com?utm_source=chrome_extension&utm_medium=footer" target="_blank" rel="noopener">
+        Powered by <strong>SEO Bandwagon</strong>
+      </a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
