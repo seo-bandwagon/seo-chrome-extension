@@ -5,7 +5,8 @@
   "description": "One-click SEO analysis: meta tags, headings, images, links, and schema markup.",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "contextMenus"
   ],
   "host_permissions": [
     "<all_urls>"

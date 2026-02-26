@@ -28,6 +28,18 @@
 
     <!-- Results -->
     <div id="results" class="results hidden">
+      <!-- Content Section -->
+      <section class="section" data-section="content">
+        <div class="section-header" onclick="toggleSection('content')">
+          <h2>
+            <span class="icon">📊</span>
+            Word &amp; Character Count
+          </h2>
+          <div class="section-score" id="contentScore">--</div>
+        </div>
+        <div class="section-content" id="contentContent"></div>
+      </section>
+
       <!-- Meta Tags Section -->
       <section class="section" data-section="meta">
         <div class="section-header" onclick="toggleSection('meta')">

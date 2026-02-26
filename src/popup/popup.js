@@ -71,7 +71,8 @@ function displayResults(data) {
     data.headings.score,
     data.images.score,
     data.links.score,
-    data.schema.score
+    data.schema.score,
+    data.content.score
   ];
   const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   
@@ -80,6 +81,7 @@ function displayResults(data) {
   overallScoreEl.className = 'score-badge ' + getScoreClass(overallScore);
   
   // Render each section
+  renderContentSection(data.content);
   renderMetaSection(data.meta);
   renderHeadingsSection(data.headings);
   renderImagesSection(data.images);
@@ -88,6 +90,84 @@ function displayResults(data) {
   
   // Open first section by default
   document.querySelector('.section').classList.add('open');
+}
+
+/**
+ * Render Content (word/character count) section
+ */
+function renderContentSection(data) {
+  const scoreEl = document.getElementById('contentScore');
+  const contentEl = document.getElementById('contentContent');
+  
+  scoreEl.textContent = `${data.stats.words.toLocaleString()} words`;
+  scoreEl.className = 'section-score ' + getScoreClass(data.score);
+  
+  let html = `
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-value">${data.stats.words.toLocaleString()}</div>
+        <div class="stat-label">Words</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.stats.characters.toLocaleString()}</div>
+        <div class="stat-label">Characters</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.stats.sentences.toLocaleString()}</div>
+        <div class="stat-label">Sentences</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">~${data.stats.readingTimeMin}m</div>
+        <div class="stat-label">Read Time</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status info">ℹ</div>
+      <div class="item-content">
+        <div class="item-label">Characters (no spaces): ${data.stats.charactersNoSpaces.toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status ${data.title.characters >= 30 && data.title.characters <= 60 ? 'pass' : 'warn'}">
+        ${data.title.characters >= 30 && data.title.characters <= 60 ? '✓' : '!'}
+      </div>
+      <div class="item-content">
+        <div class="item-label">Title: ${data.title.words} words, ${data.title.characters} chars</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status ${data.description.characters >= 120 && data.description.characters <= 160 ? 'pass' : 'warn'}">
+        ${data.description.characters >= 120 && data.description.characters <= 160 ? '✓' : '!'}
+      </div>
+      <div class="item-content">
+        <div class="item-label">Meta Description: ${data.description.words} words, ${data.description.characters} chars</div>
+      </div>
+    </div>
+  `;
+
+  // Thin content warning
+  if (data.stats.words < 300) {
+    html += `
+      <div class="item">
+        <div class="item-status warn">!</div>
+        <div class="item-content">
+          <div class="item-label">Thin content — under 300 words</div>
+          <div class="item-value">Search engines generally prefer pages with 300+ words of substantive content</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="item" style="border-top: 1px solid var(--gray-200); margin-top: 8px; padding-top: 8px;">
+      <div class="item-status info">💡</div>
+      <div class="item-content">
+        <div class="item-value">Tip: Right-click selected text on any page → "Count words & characters"</div>
+      </div>
+    </div>
+  `;
+  
+  contentEl.innerHTML = html;
 }
 
 /**

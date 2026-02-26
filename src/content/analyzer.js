@@ -10,6 +10,9 @@ if (!window.__seoAnalyzerLoaded) {
     if (request.action === 'analyze') {
       const results = analyzePage();
       sendResponse(results);
+    } else if (request.action === 'countSelection') {
+      const selection = window.getSelection().toString();
+      sendResponse(countText(selection));
     }
     return true; // Keep channel open for async response
   });
@@ -26,6 +29,7 @@ function analyzePage() {
     images: analyzeImages(),
     links: analyzeLinks(),
     schema: analyzeSchema(),
+    content: analyzeContent(),
     timestamp: Date.now()
   };
 }
@@ -396,6 +400,50 @@ function analyzeSchema() {
   }
 
   return results;
+}
+
+/**
+ * Analyze page content — word count, character count, reading time
+ */
+function analyzeContent() {
+  // Get visible body text, excluding scripts/styles/hidden elements
+  const bodyClone = document.body.cloneNode(true);
+  const removeTags = bodyClone.querySelectorAll('script, style, noscript, svg, [hidden], [aria-hidden="true"]');
+  removeTags.forEach(el => el.remove());
+  const bodyText = bodyClone.textContent || '';
+
+  const stats = countText(bodyText);
+
+  // Title stats
+  const title = document.title || '';
+  const titleWords = title.trim() ? title.trim().split(/\s+/).length : 0;
+
+  // Meta description stats
+  const descMeta = document.querySelector('meta[name="description"]');
+  const description = descMeta ? descMeta.getAttribute('content') || '' : '';
+  const descWords = description.trim() ? description.trim().split(/\s+/).length : 0;
+
+  return {
+    score: stats.words >= 300 ? 100 : stats.words >= 100 ? 70 : stats.words > 0 ? 40 : 0,
+    stats: stats,
+    title: { characters: title.length, words: titleWords },
+    description: { characters: description.length, words: descWords }
+  };
+}
+
+/**
+ * Count words, characters, sentences, and estimate reading time
+ */
+function countText(text) {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  const characters = cleaned.length;
+  const charactersNoSpaces = cleaned.replace(/\s/g, '').length;
+  const words = cleaned ? cleaned.split(/\s+/).length : 0;
+  const sentences = cleaned ? (cleaned.match(/[.!?]+(\s|$)/g) || []).length : 0;
+  const paragraphs = text.trim() ? text.trim().split(/\n\s*\n/).filter(p => p.trim()).length : 0;
+  const readingTimeMin = Math.max(1, Math.ceil(words / 238)); // avg adult reading speed
+
+  return { characters, charactersNoSpaces, words, sentences, paragraphs, readingTimeMin };
 }
 
 /**
