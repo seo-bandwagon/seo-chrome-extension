@@ -11,7 +11,26 @@ const errorDetailEl = document.getElementById('errorDetail');
 const overallScoreEl = document.getElementById('overallScore');
 
 // Start analysis when popup opens
-document.addEventListener('DOMContentLoaded', startAnalysis);
+document.addEventListener('DOMContentLoaded', () => {
+  startAnalysis();
+  initDataToggle();
+});
+
+/**
+ * Initialize data collection toggle
+ */
+async function initDataToggle() {
+  const toggle = document.getElementById('dataToggle');
+  if (!toggle) return;
+
+  // Load saved preference
+  const result = await chrome.storage.local.get('dataCollection');
+  toggle.checked = result.dataCollection !== false; // default true
+
+  toggle.addEventListener('change', () => {
+    chrome.storage.local.set({ dataCollection: toggle.checked });
+  });
+}
 
 /**
  * Start the page analysis
@@ -93,6 +112,11 @@ function displayResults(data) {
   
   // Open first section by default
   document.querySelector('.section').classList.add('open');
+
+  // Send data to API (fire and forget)
+  if (typeof sendAnalysis === 'function') {
+    sendAnalysis(data);
+  }
 }
 
 /**

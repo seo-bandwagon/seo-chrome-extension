@@ -26,13 +26,18 @@ A free, privacy-focused Chrome extension for one-click SEO analysis. Built by [S
 4. Click "Load unpacked"
 5. Select the `seo-chrome-extension` folder
 
-## Privacy
+## Privacy & Data Collection
 
 This extension:
-- ✅ Runs entirely locally - no data sent to external servers
 - ✅ Only analyzes pages when you click the icon
-- ✅ No tracking or analytics
 - ✅ No account required
+- ✅ Data collection can be disabled with one click
+
+**Data sharing (on by default):** When enabled, analysis results (URL, scores, meta tags, headings, images, links, schema, word counts, readability, and word frequency data) are sent to SEO Bandwagon servers to improve our SEO insights and services. No personally identifiable information is collected — data is associated with an anonymous session ID only.
+
+You can disable data sharing at any time using the toggle at the bottom of the extension popup. When disabled, all analysis runs entirely locally with no data leaving your browser.
+
+See our [Privacy Policy](https://seobandwagon.com/privacy) for full details.
 
 ## Development
 
