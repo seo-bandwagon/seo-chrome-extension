@@ -9,6 +9,7 @@ const resultsEl = document.getElementById('results');
 const errorEl = document.getElementById('error');
 const errorDetailEl = document.getElementById('errorDetail');
 const overallScoreEl = document.getElementById('overallScore');
+let currentTabUrl = '';
 
 // Start analysis when popup opens
 document.addEventListener('DOMContentLoaded', () => {
@@ -45,6 +46,8 @@ async function startAnalysis() {
     }
     
     // Check if we can analyze this URL
+    currentTabUrl = tab.url;
+
     if (tab.url.startsWith('chrome://') || 
         tab.url.startsWith('chrome-extension://') ||
         tab.url.startsWith('about:') ||
@@ -541,6 +544,18 @@ function renderLinksSection(data) {
       </div>
     `;
   }
+
+  // CTA link to full link analysis on seobandwagon.dev
+  const currentUrl = encodeURIComponent(currentTabUrl);
+  html += `
+    <div class="section-cta" style="margin-top: 12px; text-align: center;">
+      <a href="https://seobandwagon.dev/tools/link-analyzer?url=${currentUrl}" 
+         target="_blank" rel="noopener" 
+         style="color: #60a5fa; text-decoration: none; font-size: 13px; font-weight: 500;">
+        Get detailed link analysis →
+      </a>
+    </div>
+  `;
   
   contentEl.innerHTML = html;
 }
