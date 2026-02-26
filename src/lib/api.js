@@ -56,7 +56,10 @@ async function sendAnalysis(data) {
 
     const response = await fetch(ANALYSIS_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEO-Analyzer': `chrome-ext/${version}`,
+      },
       body: JSON.stringify(payload),
     });
 
