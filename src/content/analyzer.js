@@ -3,14 +3,17 @@
  * Analyzes the current page for SEO issues
  */
 
-// Listen for analysis requests from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'analyze') {
-    const results = analyzePage();
-    sendResponse(results);
-  }
-  return true; // Keep channel open for async response
-});
+// Guard against duplicate injection — only add listener once
+if (!window.__seoAnalyzerLoaded) {
+  window.__seoAnalyzerLoaded = true;
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'analyze') {
+      const results = analyzePage();
+      sendResponse(results);
+    }
+    return true; // Keep channel open for async response
+  });
+}
 
 /**
  * Main analysis function
@@ -268,7 +271,8 @@ function analyzeLinks() {
       external: 0, 
       nofollow: 0, 
       noopener: 0,
-      empty: 0 
+      empty: 0,
+      blankWithoutNoopener: 0
     }
   };
 
@@ -294,6 +298,7 @@ function analyzeLinks() {
     const isInternal = !href.startsWith('http') || linkHost === currentHost;
     const isExternal = href.startsWith('http') && linkHost !== currentHost;
     const isNofollow = rel.includes('nofollow');
+    const hasTargetBlank = link.getAttribute('target') === '_blank';
     const isNoopener = rel.includes('noopener');
     const isEmpty = !text && !link.querySelector('img');
     
@@ -302,10 +307,11 @@ function analyzeLinks() {
     if (isNofollow) results.stats.nofollow++;
     if (isNoopener) results.stats.noopener++;
     if (isEmpty) results.stats.empty++;
+    if (isExternal && hasTargetBlank && !isNoopener) results.stats.blankWithoutNoopener++;
   });
 
-  // External links without noopener
-  const externalWithoutNoopener = results.stats.external - results.stats.noopener;
+  // External links with target="_blank" but no noopener
+  const externalWithoutNoopener = results.stats.blankWithoutNoopener || 0;
   
   // Issues
   if (results.stats.empty > 0) {
@@ -378,11 +384,15 @@ function analyzeSchema() {
     });
   }
 
-  // Calculate score
-  if (results.types.length > 0) {
-    results.score = 100;
-  } else {
+  // Calculate score — reward breadth and JSON-LD usage
+  if (results.types.length === 0) {
     results.score = 0;
+  } else {
+    let score = 50; // base for having any schema
+    if (results.jsonLd.length > 0) score += 20; // JSON-LD is preferred format
+    if (results.types.length >= 2) score += 15; // multiple types shows depth
+    if (results.types.length >= 4) score += 15; // comprehensive markup
+    results.score = Math.min(100, score);
   }
 
   return results;

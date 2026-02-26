@@ -163,15 +163,14 @@ body {
 .section-score.bad { background: #fee2e2; color: #991b1b; }
 
 .section-content {
+  display: none;
   padding: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.2s ease-out, padding 0.2s ease-out;
 }
 
 .section.open .section-content {
+  display: block;
   padding: 12px 14px;
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
