@@ -72,7 +72,8 @@ function displayResults(data) {
     data.images.score,
     data.links.score,
     data.schema.score,
-    data.content.score
+    data.content.score,
+    data.readability.score
   ];
   const overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   
@@ -82,6 +83,8 @@ function displayResults(data) {
   
   // Render each section
   renderContentSection(data.content);
+  renderReadabilitySection(data.readability);
+  renderNgramsSection(data.ngrams);
   renderMetaSection(data.meta);
   renderHeadingsSection(data.headings);
   renderImagesSection(data.images);
@@ -167,6 +170,140 @@ function renderContentSection(data) {
     </div>
   `;
   
+  contentEl.innerHTML = html;
+}
+
+/**
+ * Render Readability section
+ */
+function renderReadabilitySection(data) {
+  const scoreEl = document.getElementById('readabilityScore');
+  const contentEl = document.getElementById('readabilityContent');
+  
+  if (data.message) {
+    scoreEl.textContent = 'N/A';
+    scoreEl.className = 'section-score';
+    contentEl.innerHTML = `
+      <div class="item">
+        <div class="item-status info">ℹ</div>
+        <div class="item-content"><div class="item-label">${data.message}</div></div>
+      </div>
+    `;
+    return;
+  }
+
+  scoreEl.textContent = `${data.score}%`;
+  scoreEl.className = 'section-score ' + getScoreClass(data.score);
+
+  // Flesch ease label
+  let easeLabel, easeStatus;
+  if (data.fleschEase >= 80) { easeLabel = 'Very Easy (conversational)'; easeStatus = 'pass'; }
+  else if (data.fleschEase >= 60) { easeLabel = 'Standard (good for web)'; easeStatus = 'pass'; }
+  else if (data.fleschEase >= 40) { easeLabel = 'Somewhat Difficult'; easeStatus = 'warn'; }
+  else if (data.fleschEase >= 20) { easeLabel = 'Difficult (academic)'; easeStatus = 'warn'; }
+  else { easeLabel = 'Very Difficult'; easeStatus = 'fail'; }
+
+  // Grade label
+  let gradeLabel;
+  if (data.fleschKincaid <= 6) gradeLabel = 'Elementary';
+  else if (data.fleschKincaid <= 8) gradeLabel = 'Middle School';
+  else if (data.fleschKincaid <= 12) gradeLabel = 'High School';
+  else gradeLabel = 'College+';
+
+  contentEl.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-value">${data.fleschEase}</div>
+        <div class="stat-label">Flesch Ease</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.fleschKincaid}</div>
+        <div class="stat-label">Grade Level</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.avgSentenceLen}</div>
+        <div class="stat-label">Words/Sentence</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.avgWordLen}</div>
+        <div class="stat-label">Chars/Word</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status ${easeStatus}">${getStatusIcon(easeStatus)}</div>
+      <div class="item-content">
+        <div class="item-label">Flesch Reading Ease: ${data.fleschEase} — ${easeLabel}</div>
+        <div class="item-value">60+ recommended for web content. Higher = easier to read.</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status info">ℹ</div>
+      <div class="item-content">
+        <div class="item-label">Grade Level: ${data.fleschKincaid} — ${gradeLabel}</div>
+        <div class="item-value">Flesch-Kincaid grade. Most web content targets 6th–8th grade.</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="item-status info">ℹ</div>
+      <div class="item-content">
+        <div class="item-label">Avg syllables per word: ${data.syllablesPerWord}</div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render N-grams / Word Combinations section
+ */
+function renderNgramsSection(data) {
+  const scoreEl = document.getElementById('ngramsScore');
+  const contentEl = document.getElementById('ngramsContent');
+  
+  scoreEl.textContent = `${data.uniqueWords} unique`;
+  scoreEl.className = 'section-score';
+
+  let html = `
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-value">${data.totalWords.toLocaleString()}</div>
+        <div class="stat-label">Total Words</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${data.uniqueWords.toLocaleString()}</div>
+        <div class="stat-label">Unique Words</div>
+      </div>
+    </div>
+  `;
+
+  // Render each n-gram group
+  const groups = [
+    { label: 'Top Single Words', items: data.unigrams },
+    { label: 'Top 2-Word Phrases', items: data.bigrams },
+    { label: 'Top 3-Word Phrases', items: data.trigrams }
+  ];
+
+  groups.forEach(group => {
+    html += `<div class="item-label" style="margin-top: 10px; margin-bottom: 6px; font-weight: 600;">${group.label}</div>`;
+    if (group.items.length === 0) {
+      html += `<div class="item-value" style="margin-bottom: 8px;">No repeated phrases found</div>`;
+    } else {
+      html += '<div class="ngram-list">';
+      group.items.forEach((item, i) => {
+        const barWidth = Math.max(8, Math.round((item.count / group.items[0].count) * 100));
+        html += `
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px; font-size: 12px;">
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gray-700);">${escapeHtml(item.phrase)}</span>
+            <div style="width: 60px; height: 6px; background: var(--gray-100); border-radius: 3px; flex-shrink: 0;">
+              <div style="width: ${barWidth}%; height: 100%; background: var(--primary); border-radius: 3px;"></div>
+            </div>
+            <span style="flex-shrink: 0; width: 24px; text-align: right; color: var(--gray-500); font-size: 11px;">${item.count}</span>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+  });
+
   contentEl.innerHTML = html;
 }
 

@@ -71,10 +71,8 @@ function showCountNotification(stats) {
       <div style="font-weight: 600; margin-bottom: 6px; font-size: 14px; color: #60a5fa;">
         📊 Text Count
       </div>
-      <div><strong>${stats.words.toLocaleString()}</strong> words</div>
-      <div><strong>${stats.characters.toLocaleString()}</strong> characters</div>
-      <div><strong>${stats.charactersNoSpaces.toLocaleString()}</strong> chars (no spaces)</div>
-      <div><strong>${stats.sentences.toLocaleString()}</strong> sentences</div>
+      <div><strong>${stats.words.toLocaleString()}</strong> words · <strong>${stats.characters.toLocaleString()}</strong> characters</div>
+      <div><strong>${stats.charactersNoSpaces.toLocaleString()}</strong> chars (no spaces) · <strong>${stats.sentences.toLocaleString()}</strong> sentences</div>
       <div style="margin-top: 4px; color: #94a3b8; font-size: 12px;">
         ~${stats.readingTimeMin} min read
       </div>

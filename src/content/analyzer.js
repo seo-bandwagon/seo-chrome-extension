@@ -30,6 +30,8 @@ function analyzePage() {
     links: analyzeLinks(),
     schema: analyzeSchema(),
     content: analyzeContent(),
+    readability: analyzeReadability(),
+    ngrams: analyzeNgrams(),
     timestamp: Date.now()
   };
 }
@@ -444,6 +446,137 @@ function countText(text) {
   const readingTimeMin = Math.max(1, Math.ceil(words / 238)); // avg adult reading speed
 
   return { characters, charactersNoSpaces, words, sentences, paragraphs, readingTimeMin };
+}
+
+/**
+ * Readability analysis — Flesch Reading Ease, Flesch-Kincaid Grade, avg lengths
+ */
+function analyzeReadability() {
+  const bodyClone = document.body.cloneNode(true);
+  bodyClone.querySelectorAll('script, style, noscript, svg, [hidden], [aria-hidden="true"]').forEach(el => el.remove());
+  const text = (bodyClone.textContent || '').replace(/\s+/g, ' ').trim();
+
+  if (!text || text.split(/\s+/).length < 30) {
+    return { score: 0, fleschEase: null, fleschKincaid: null, avgSentenceLen: 0, avgWordLen: 0, syllablesPerWord: 0, message: 'Not enough text to analyze (need 30+ words)' };
+  }
+
+  const words = text.split(/\s+/);
+  const wordCount = words.length;
+  const sentenceCount = Math.max(1, (text.match(/[.!?]+(\s|$)/g) || []).length);
+  const totalSyllables = words.reduce((sum, w) => sum + countSyllables(w), 0);
+
+  const avgSentenceLen = +(wordCount / sentenceCount).toFixed(1);
+  const avgWordLen = +(words.join('').length / wordCount).toFixed(1);
+  const syllablesPerWord = +(totalSyllables / wordCount).toFixed(2);
+
+  // Flesch Reading Ease: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)
+  const fleschEase = Math.max(0, Math.min(100,
+    +(206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (totalSyllables / wordCount)).toFixed(1)
+  ));
+
+  // Flesch-Kincaid Grade Level: 0.39*(words/sentences) + 11.8*(syllables/words) - 15.59
+  const fleschKincaid = Math.max(0,
+    +(0.39 * (wordCount / sentenceCount) + 11.8 * (totalSyllables / wordCount) - 15.59).toFixed(1)
+  );
+
+  // Score: Flesch Ease maps well — 60+ is good for web content
+  const score = fleschEase >= 60 ? 100 : fleschEase >= 40 ? 70 : fleschEase >= 20 ? 40 : 20;
+
+  return { score, fleschEase, fleschKincaid, avgSentenceLen, avgWordLen, syllablesPerWord, message: null };
+}
+
+/**
+ * Count syllables in a word (English approximation)
+ */
+function countSyllables(word) {
+  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!word || word.length <= 2) return 1;
+
+  // Remove trailing silent e
+  word = word.replace(/e$/, '');
+
+  // Count vowel groups
+  const vowelGroups = word.match(/[aeiouy]+/g);
+  let count = vowelGroups ? vowelGroups.length : 1;
+
+  return Math.max(1, count);
+}
+
+/**
+ * N-gram / word combination frequency analysis
+ */
+function analyzeNgrams() {
+  const bodyClone = document.body.cloneNode(true);
+  bodyClone.querySelectorAll('script, style, noscript, svg, [hidden], [aria-hidden="true"]').forEach(el => el.remove());
+  const text = (bodyClone.textContent || '').toLowerCase();
+
+  // Tokenize: letters, numbers, hyphens within words
+  const words = text.match(/[a-z0-9](?:[a-z0-9'-]*[a-z0-9])?/g) || [];
+
+  const stopWords = new Set([
+    'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+    'from','is','it','its','this','that','are','was','were','be','been','being',
+    'have','has','had','do','does','did','will','would','could','should','may',
+    'might','shall','can','not','no','nor','so','if','then','than','too','very',
+    'just','about','above','after','again','all','also','am','as','because',
+    'before','between','both','each','few','get','got','he','her','here','him',
+    'his','how','i','into','me','more','most','my','new','now','of','only',
+    'other','our','out','over','own','re','same','she','some','such','there',
+    'they','their','them','these','those','through','under','up','us','we',
+    'what','when','where','which','while','who','whom','why','you','your',
+    'able','across','already','always','among','any','around','away','back',
+    'become','been','below','come','down','during','even','every','find',
+    'first','go','going','good','great','help','here','high','however',
+    'into','keep','know','last','let','like','long','look','made','make',
+    'many','much','must','need','next','off','often','old','once','one',
+    'only','part','per','put','said','say','see','seem','set','show',
+    'since','still','take','tell','thing','think','time','two','use',
+    'want','way','well','work','year'
+  ]);
+
+  // Filter out stop words for n-gram analysis
+  const filtered = words.filter(w => !stopWords.has(w) && w.length > 1);
+
+  // Build n-grams (1, 2, 3)
+  const unigrams = buildNgramCounts(filtered, 1);
+  const bigrams = buildNgramCounts(words.filter(w => w.length > 1), 2, stopWords); // use all words but filter results
+  const trigrams = buildNgramCounts(words.filter(w => w.length > 1), 3, stopWords);
+
+  return {
+    unigrams: getTopN(unigrams, 15),
+    bigrams: getTopN(bigrams, 10),
+    trigrams: getTopN(trigrams, 10),
+    totalWords: words.length,
+    uniqueWords: new Set(words).size
+  };
+}
+
+/**
+ * Build n-gram frequency map
+ */
+function buildNgramCounts(words, n, stopWords) {
+  const counts = {};
+  for (let i = 0; i <= words.length - n; i++) {
+    const gram = words.slice(i, i + n).join(' ');
+    // For bigrams/trigrams: skip if ALL words are stop words
+    if (n > 1 && stopWords) {
+      const parts = gram.split(' ');
+      if (parts.every(w => stopWords.has(w))) continue;
+    }
+    counts[gram] = (counts[gram] || 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Get top N entries from frequency map (minimum count of 2)
+ */
+function getTopN(counts, n) {
+  return Object.entries(counts)
+    .filter(([_, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([phrase, count]) => ({ phrase, count }));
 }
 
 /**
