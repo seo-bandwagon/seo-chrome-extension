@@ -15,6 +15,14 @@ let currentTabUrl = '';
 document.addEventListener('DOMContentLoaded', () => {
   startAnalysis();
   initDataToggle();
+
+  // Dashboard button
+  const dashBtn = document.getElementById('dashboardBtn');
+  if (dashBtn) {
+    dashBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/popup/dashboard.html') });
+    });
+  }
 });
 
 /**

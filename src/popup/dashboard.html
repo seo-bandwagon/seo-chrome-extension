@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Analyzer Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a; color: #e2e8f0; min-width: 700px; min-height: 500px;
+      padding: 20px;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header h1 { font-size: 20px; color: #f8fafc; }
+    .header .stats { display: flex; gap: 16px; }
+    .stat-card {
+      background: #1e293b; border-radius: 8px; padding: 12px 18px; text-align: center;
+      border: 1px solid #334155;
+    }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: #60a5fa; }
+    .stat-card .label { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .domains { margin-bottom: 20px; }
+    .domains h2 { font-size: 14px; color: #94a3b8; margin-bottom: 8px; }
+    .domain-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .domain-chip {
+      background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+      padding: 4px 12px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+    }
+    .domain-chip:hover, .domain-chip.active { background: #60a5fa; color: #0f172a; border-color: #60a5fa; }
+    .domain-chip .count { opacity: 0.7; margin-left: 4px; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }
+    thead th {
+      background: #0f172a; padding: 10px 12px; text-align: left; font-size: 11px;
+      color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155;
+    }
+    tbody td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #1e293b; }
+    tbody tr { transition: background 0.1s; }
+    tbody tr:hover { background: #1e293b; }
+    .score-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;
+    }
+    .score-good { background: #065f46; color: #6ee7b7; }
+    .score-ok { background: #78350f; color: #fcd34d; }
+    .score-bad { background: #7f1d1d; color: #fca5a5; }
+    .url-cell { max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .url-cell a { color: #60a5fa; text-decoration: none; }
+    .url-cell a:hover { text-decoration: underline; }
+    .cwv-cell { font-size: 11px; }
+    .cwv-good { color: #6ee7b7; }
+    .cwv-warn { color: #fcd34d; }
+    .cwv-bad { color: #fca5a5; }
+    .loading { text-align: center; padding: 40px; color: #94a3b8; }
+    .empty { text-align: center; padding: 40px; color: #64748b; }
+    .refresh-btn {
+      background: #334155; border: none; color: #94a3b8; padding: 6px 12px;
+      border-radius: 6px; cursor: pointer; font-size: 12px;
+    }
+    .refresh-btn:hover { background: #475569; color: #e2e8f0; }
+    .time-ago { color: #64748b; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📊 SEO Analyzer Dashboard</h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+      <div class="stats" id="statsBar"></div>
+    </div>
+  </div>
+  <div class="domains" id="domainFilter"></div>
+  <div id="content"><div class="loading">Loading analyses...</div></div>
+
+  <script>
+    const API = 'https://api.seobandwagon.dev/api/extension';
+    let allData = null;
+    let activeDomain = null;
+
+    async function loadDashboard() {
+      try {
+        const url = activeDomain ? `${API}/dashboard?limit=200&domain=${encodeURIComponent(activeDomain)}` : `${API}/dashboard?limit=200`;
+        const res = await fetch(url);
+        const data = await res.json();
+        allData = data;
+        renderStats(data);
+        renderDomains(data.domains);
+        renderTable(data.analyses);
+      } catch (e) {
+        document.getElementById('content').innerHTML = '<div class="empty">Failed to load data. Check API connection.</div>';
+      }
+    }
+
+    function renderStats(data) {
+      const avgScore = data.analyses.length > 0
+        ? Math.round(data.analyses.reduce((s, a) => s + (a.overall_score || 0), 0) / data.analyses.length)
+        : 0;
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card"><div class="value">${data.total}</div><div class="label">Analyses</div></div>
+        <div class="stat-card"><div class="value">${data.domains.length}</div><div class="label">Domains</div></div>
+        <div class="stat-card"><div class="value">${avgScore}%</div><div class="label">Avg Score</div></div>
+      `;
+    }
+
+    function renderDomains(domains) {
+      if (domains.length <= 1) { document.getElementById('domainFilter').innerHTML = ''; return; }
+      let html = '<h2>Domains</h2><div class="domain-chips">';
+      html += `<div class="domain-chip ${!activeDomain ? 'active' : ''}" data-domain="">All<span class="count">(${allData.total})</span></div>`;
+      domains.forEach(d => {
+        html += `<div class="domain-chip ${activeDomain === d.domain ? 'active' : ''}" data-domain="${d.domain}">${d.domain}<span class="count">(${d.count})</span></div>`;
+      });
+      html += '</div>';
+      document.getElementById('domainFilter').innerHTML = html;
+
+      document.querySelectorAll('.domain-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeDomain = chip.dataset.domain || null;
+          loadDashboard();
+        });
+      });
+    }
+
+    function renderTable(analyses) {
+      if (!analyses || analyses.length === 0) {
+        document.getElementById('content').innerHTML = '<div class="empty">No analyses yet. Use the extension to analyze some pages!</div>';
+        return;
+      }
+
+      let html = `<table><thead><tr>
+        <th>URL</th><th>Score</th><th>Words</th><th>Reading</th><th>Text/HTML</th><th>LCP</th><th>CLS</th><th>When</th>
+      </tr></thead><tbody>`;
+
+      analyses.forEach(a => {
+        const score = a.overall_score || 0;
+        const scoreClass = score >= 80 ? 'score-good' : score >= 50 ? 'score-ok' : 'score-bad';
+        const words = a.content?.stats?.words?.toLocaleString() || '-';
+        const reading = a.readability?.fleschEase != null ? a.readability.fleschEase : '-';
+        const textHtml = a.text_to_html?.ratio != null ? a.text_to_html.ratio + '%' : '-';
+
+        const lcp = a.web_vitals?.lcp;
+        const lcpStr = lcp != null ? (lcp / 1000).toFixed(1) + 's' : '-';
+        const lcpClass = lcp == null ? '' : lcp <= 2500 ? 'cwv-good' : lcp <= 4000 ? 'cwv-warn' : 'cwv-bad';
+
+        const cls = a.web_vitals?.cls;
+        const clsStr = cls != null ? cls.toString() : '-';
+        const clsClass = cls == null ? '' : cls <= 0.1 ? 'cwv-good' : cls <= 0.25 ? 'cwv-warn' : 'cwv-bad';
+
+        const when = timeAgo(a.created_at);
+        const shortUrl = a.url.replace(/^https?:\/\//, '').substring(0, 60);
+
+        html += `<tr>
+          <td class="url-cell"><a href="${a.url}" target="_blank">${shortUrl}</a></td>
+          <td><span class="score-badge ${scoreClass}">${score}%</span></td>
+          <td>${words}</td>
+          <td>${reading}</td>
+          <td>${textHtml}</td>
+          <td class="cwv-cell ${lcpClass}">${lcpStr}</td>
+          <td class="cwv-cell ${clsClass}">${clsStr}</td>
+          <td class="time-ago">${when}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('content').innerHTML = html;
+    }
+
+    function timeAgo(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      return days + 'd ago';
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+    loadDashboard();
+  </script>
+</body>
+</html>
