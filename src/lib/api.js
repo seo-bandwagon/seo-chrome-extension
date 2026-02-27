@@ -3,7 +3,7 @@
  * Sends analysis data to seobandwagon.dev
  */
 
-const API_BASE = 'https://seobandwagon.dev';
+const API_BASE = 'https://api.seobandwagon.dev';
 const ANALYSIS_ENDPOINT = `${API_BASE}/api/extension/analysis`;
 
 /**
