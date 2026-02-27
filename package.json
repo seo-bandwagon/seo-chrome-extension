@@ -1,6 +1,6 @@
 {
   "name": "seo-chrome-extension",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "One-click SEO analysis Chrome extension by SEO Bandwagon",
   "private": true,
   "scripts": {
