@@ -646,11 +646,19 @@ function showError(message) {
  */
 function toggleSection(sectionId) {
   const section = document.querySelector(`[data-section="${sectionId}"]`);
-  section.classList.toggle('open');
+  if (section) section.classList.toggle('open');
 }
 
-// Make toggleSection globally available
-window.toggleSection = toggleSection;
+// Event delegation for section headers (MV3 blocks inline onclick)
+document.addEventListener('click', (e) => {
+  const header = e.target.closest('.section-header');
+  if (header) {
+    const section = header.closest('.section');
+    if (section && section.dataset.section) {
+      toggleSection(section.dataset.section);
+    }
+  }
+});
 
 /**
  * Get CSS class for score
